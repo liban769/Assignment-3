@@ -1,0 +1,98 @@
+---
+title: "assignment 3"
+author: "13"
+format: pdf
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+Task 1
+
+```{r}
+rm(list=ls())
+library(jsonlite)
+library(tidyverse)
+library(scales)
+library(ggrepel)
+```
+
+```{r}
+df <- fromJSON("https://static01.nyt.com/newsgraphics/2021/12/20/us-coronavirus-deaths-2021/ff0adde21623e111d8ce103fedecf7ffc7906264/scatter.json")
+
+```
+
+```{r}
+df <- df %>% 
+  mutate(state_name = state.abb[match(name, state.name)]) 
+  
+df[9, 7] = "D.C"
+```
+
+```{r}
+
+figure <- df %>%
+ggplot(aes(fully_vaccinated_pct_of_pop*100, deaths_per_100k, label=state_name)) + theme_bw() + 
+geom_point(color="green", size=1.5) +
+geom_text_repel(size=2.5) +
+labs(x= "Total population fully vaccinated", y="", title ="Covid-19 deaths since universal adult vaccine eligibility compared with vaccination rates", caption = "Source: New York Times database") +
+scale_x_continuous(labels = percent_format(scale = 1),
+                     breaks = seq(45,80,5),limits = c(45,80), 
+                     expand = c(0, 0)) +
+scale_y_continuous(breaks = seq(from = 0, to = 20, by = 5), 
+limits = c(0,20),
+expand = c(0, 0)) +
+annotate("text", x=59,y=17, label="Lower vaccination rate, 
+           higher death rate") +
+geom_segment(aes(x=56, y=15.5, xend=54, yend=16.5), 
+arrow = arrow(length=unit(.2, 'cm')), lwd=.5)+
+annotate("text",x=73,y=10, label="Higher vaccination rate,
+           lower death rate") + 
+geom_segment(aes(x=70, y=8.5, xend=72, yend=7.5), 
+arrow = arrow(length=unit(.2, 'cm')), lwd=.5) +
+
+theme(panel.border=element_rect(linetype=3), panel.grid=element_line(linetype ="dotted")) 
+
+figure
+```
+
+Task 2
+
+```{r}
+lm(deaths_per_100k ~ fully_vaccinated_pct_of_pop, data = df)
+```
+
+```{r}
+cor(df$deaths_per_100k,df$fully_vaccinated_pct_of_pop, use = "complete.obs")
+```
+
+```{r}
+figure <- figure + geom_smooth(method = lm, se = FALSE)
+
+figure
+```
+
+```{r}
+
+```
+
+A high value of one of the variables is likely to be found with a low value of the other since there is a negative correlation between them. The association is stronger the closer the number gets to -1.
